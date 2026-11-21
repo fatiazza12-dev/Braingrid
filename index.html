@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BrainGrid</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="BrainGrid" />
+  <style>
+    * {
+      box-sizing: border-box;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #4a1034, #14050f);
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 14px;
+    }
+    .app {
+      width: 100%;
+      max-width: 430px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+    }
+    .view {
+      display: none;
+    }
+    .view.active {
+      display: block;
+    }
+    .center {
+      text-align: center;
+    }
+    h1 {
+      margin: 6px 0 6px;
+      font-size: 28px;
+      letter-spacing: 0.5px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+    p {
+      margin: 8px 0 16px;
+      color: #f3d6e8;
+      font-size: 14px;
+    }
+    .hero-art {
+      width: 100%;
+      max-height: 180px;
+      border-radius: 16px;
+      overflow: hidden;
+      margin: 12px 0 18px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: #28081c;
+    }
+    .hero-art svg {
+      width: 100%;
+      height: 170px;
+      display: block;
+    }
+    .btn {
+      background: linear-gradient(135deg, #ff2e93, #c9186b);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      padding: 11px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .levels-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      max-height: 330px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+    .lvl-btn {
+      padding: 10px 4px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .lvl-btn.locked {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .groups-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .grp-btn {
+      padding: 12px 6px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.09);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .grp-btn.locked {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 8px;
+      border-radius: 14px;
+      touch-action: none;
+      margin: 12px 0;
+    }
+    .cell {
+      aspect-ratio: 1 / 1;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      color: #fff;
+    }
+    .cell.selected {
+      background: #ff2e93;
+      color: #fff;
+    }
+    .cell.found {
+      background: #25b865;
+      color: #fff;
+    }
+    .words-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      margin: 10px 0 14px;
+    }
+    .word-chip {
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .word-chip.done {
+      background: rgba(37, 184, 101, 0.28);
+      border: 1px solid #25b865;
+      text-decoration: line-through;
+    }
+    .hint-box {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      font-size: 13px;
+      display: none;
+    }
+    .hint-box.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- v0: Splash -->
+    <section id="v0" class="view active center">
+      <h1>BrainGrid</h1>
+      <p>Train your brain</p>
+      <div class="hero-art">
+        <svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#6b144b" />
+              <stop offset="100%" stop-color="#240719" />
+            </linearGradient>
+          </defs>
+          <rect width="400" height="170" fill="url(#bgGrad)" />
+          <circle cx="200" cy="85" r="46" fill="#ff2e93" opacity="0.22" />
+          <circle cx="200" cy="85" r="24" fill="#ff5cb0" />
+          <path d="M120 85 Q160 35 200 85 T280 85" fill="none" stroke="#ff9ed2" stroke-width="3" />
+          <path d="M135 112 Q170 65 200 85 T265 58" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.7" />
+        </svg>
+      </div>
+      <button class="btn" onclick="go(1)">Start</button>
+    </section>
+
+    <!-- v1: 50 Levels -->
+    <section id="v1" class="view">
+      <div class="topbar">
+        <button class="btn-ghost" onclick="go(0)">Home</button>
+        <h2>Select Level (50)</h2>
+        <span></span>
+      </div>
+      <div id="levelsGrid" class="levels-grid"></div>
+    </section>
+
+    <!-- v2: 12 Groups -->
+    <section id="v2" class="view">
+      <div class="topbar">
+        <button class="btn-ghost" onclick="go(1)">Levels</button>
+        <h2 id="levelTitle">Level 1</h2>
+        <span></span>
+      </div>
+      <p class="center">Choose one of 12 groups</p>
+      <div id="groupsGrid" class="groups-grid"></div>
+    </section>
+
+    <!-- v3: 9x9 Swipe Grid -->
+    <section id="v3" class="view">
+      <div class="topbar">
+        <button class="btn-ghost" onclick="go(2)">Groups</button>
+        <h2 id="groupTitle">L1 · G1</h2>
+        <button class="btn-ghost" onclick="toggleHint()">Hint</button>
+      </div>
+      <div id="wordsList" class="words-list"></div>
+      <div id="board" class="board"></div>
+      <div id="hintBox" class="hint-box"></div>
+      <div class="center">
+        <button id="nextGroupBtn" class="btn" style="display:none;" onclick="nextGroup()">Next Group</button>
+      </div>
+    </section>
+
+    <!-- v4: Level Complete -->
+    <section id="v4" class="view center">
+      <h2>Level Complete!</h2>
+      <p id="completeText">All 12 groups cleared.</p>
+      <button class="btn" onclick="go(1)">Back to Levels</button>
+    </section>
+  </div>
+
+  <script>
+    const WORD_BANKS = [
+      ["MIND", "GRID", "FOCUS", "LOGIC"],
+      ["BRAIN", "SMART", "THINK", "SOLVE"],
+      ["PULSE", "SPARK", "SHIFT", "CLEAR"],
+      ["POINT", "TRACE", "LINK", "FLOW"],
+      ["SHARP", "QUICK", "FIND", "WORD"]
+    ];
+
+    const L = Array.from({ length: 50 }, (_, levelIdx) => {
+      const levelNum = levelIdx + 1;
+      const groups = Array.from({ length: 12 }, (_, groupIdx) => {
+        const groupNum = groupIdx + 1;
+        const words = WORD_BANKS[(levelIdx + groupIdx) % WORD_BANKS.length];
+        return {
+          id: groupNum,
+          title: `L${levelNum} · G${groupNum}`,
+          hint: `Swipe across letters to find: ${words.join(", ")}`,
+          words
+        };
+      });
+      return { level: levelNum, groups };
+    });
+
+    const state = {
+      unlockedLevel: 1,
+      unlockedGroupByLevel: { 1: 1 },
+      currentLevel: 1,
+      currentGroup: 1,
+      grid: [],
+      foundWords: new Set(),
+      foundCells: new Set(),
+      selected: [],
+      isDragging: false
+    };
+
+    function go(v) {
+      document.querySelectorAll(".view").forEach((el, idx) => {
+        el.classList.toggle("active", idx === v);
+      });
+      if (v === 1) renderLevels();
+      if (v === 2) renderGroups(state.currentLevel);
+    }
+
+    function renderLevels() {
+      const container = document.getElementById("levelsGrid");
+      container.innerHTML = "";
+      L.forEach((item) => {
+        const unlocked = item.level <= state.unlockedLevel;
+        const btn = document.createElement("button");
+        btn.className = "lvl-btn" + (unlocked ? "" : " locked");
+        btn.textContent = item.level;
+        btn.disabled = !unlocked;
+        btn.onclick = () => {
+          state.currentLevel = item.level;
+          if (!state.unlockedGroupByLevel[item.level]) {
+            state.unlockedGroupByLevel[item.level] = 1;
+          }
+          go(2);
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function renderGroups(levelNum) {
+      document.getElementById("levelTitle").textContent = `Level ${levelNum}`;
+      const maxUnlocked = state.unlockedGroupByLevel[levelNum] || 1;
+      const levelObj = L[levelNum - 1];
+      const container = document.getElementById("groupsGrid");
+      container.innerHTML = "";
+
+      levelObj.groups.forEach((grp) => {
+        const unlocked = grp.id <= maxUnlocked;
+        const btn = document.createElement("button");
+        btn.className = "grp-btn" + (unlocked ? "" : " locked");
+        btn.textContent = `G${grp.id}`;
+        btn.disabled = !unlocked;
+        btn.onclick = () => startGroup(levelNum, grp.id);
+        container.appendChild(btn);
+      });
+    }
+
+    function buildBoard(words) {
+      const size = 9;
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const grid = Array.from({ length: size }, () =>
+        Array.from({ length: size }, () => letters[Math.floor(Math.random() * letters.length)])
+      );
+
+      words.forEach((word, idx) => {
+        const row = (idx * 2) % size;
+        const startCol = Math.max(0, Math.min(size - word.length, (idx * 2) % (size - word.length + 1)));
+        for (let i = 0; i < word.length; i++) {
+          grid[row][startCol + i] = word[i];
+        }
+      });
+
+      return grid;
+    }
+
+    function startGroup(levelNum, groupNum) {
+      state.currentLevel = levelNum;
+      state.currentGroup = groupNum;
+      state.foundWords = new Set();
+      state.foundCells = new Set();
+      state.selected = [];
+
+      const grp = L[levelNum - 1].groups[groupNum - 1];
+      state.grid = buildBoard(grp.words);
+
+      document.getElementById("groupTitle").textContent = grp.title;
+      const hintBox = document.getElementById("hintBox");
+      hintBox.textContent = grp.hint;
+      hintBox.classList.remove("show");
+      document.getElementById("nextGroupBtn").style.display = "none";
+
+      renderWords(grp.words);
+      renderBoard();
+      go(3);
+    }
+
+    function renderWords(words) {
+      const list = document.getElementById("wordsList");
+      list.innerHTML = "";
+      words.forEach((w) => {
+        const chip = document.createElement("span");
+        chip.className = "word-chip" + (state.foundWords.has(w) ? " done" : "");
+        chip.textContent = w;
+        list.appendChild(chip);
+      });
+    }
+
+    function renderBoard() {
+      const board = document.getElementById("board");
+      board.innerHTML = "";
+
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          const key = `${r},${c}`;
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.dataset.r = r;
+          cell.dataset.c = c;
+          if (state.foundCells.has(key)) cell.classList.add("found");
+          if (state.selected.some((p) => p.r === r && p.c === c)) cell.classList.add("selected");
+          cell.textContent = state.grid[r][c];
+          board.appendChild(cell);
+        }
+      }
+
+      board.onpointerdown = (e) => {
+        const target = e.target.closest(".cell");
+        if (!target) return;
+        board.setPointerCapture(e.pointerId);
+        state.isDragging = true;
+        state.selected = [{ r: +target.dataset.r, c: +target.dataset.c }];
+        paintSelection();
+      };
+
+      board.onpointermove = (e) => {
+        if (!state.isDragging) return;
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        const cell = el && el.closest(".cell");
+        if (!cell) return;
+        const pos = { r: +cell.dataset.r, c: +cell.dataset.c };
+        if (!state.selected.some((p) => p.r === pos.r && p.c === pos.c)) {
+          state.selected.push(pos);
+          paintSelection();
+        }
+      };
+
+      board.onpointerup = () => {
+        if (!state.isDragging) return;
+        state.isDragging = false;
+        checkWord();
+        state.selected = [];
+        paintSelection();
+      };
+    }
+
+    function paintSelection() {
+      document.querySelectorAll(".cell").forEach((cell) => {
+        const r = +cell.dataset.r;
+        const c = +cell.dataset.c;
+        const isSel = state.selected.some((p) => p.r === r && p.c === c);
+        cell.classList.toggle("selected", isSel);
+      });
+    }
+
+    function checkWord() {
+      const grp = L[state.currentLevel - 1].groups[state.currentGroup - 1];
+      const word = state.selected.map((p) => state.grid[p.r][p.c]).join("");
+      const rev = word.split("").reverse().join("");
+
+      const matched = grp.words.find((w) => w === word || w === rev);
+      if (matched && !state.foundWords.has(matched)) {
+        state.foundWords.add(matched);
+        state.selected.forEach((p) => state.foundCells.add(`${p.r},${p.c}`));
+        renderWords(grp.words);
+        renderBoard();
+
+        if (state.foundWords.size === grp.words.length) {
+          unlockNext();
+          document.getElementById("nextGroupBtn").style.display = "inline-block";
+        }
+      }
+    }
+
+    function toggleHint() {
+      document.getElementById("hintBox").classList.toggle("show");
+    }
+
+    function unlockNext() {
+      const lvl = state.currentLevel;
+      const grp = state.currentGroup;
+      if (grp < 12) {
+        const curMax = state.unlockedGroupByLevel[lvl] || 1;
+        state.unlockedGroupByLevel[lvl] = Math.max(curMax, grp + 1);
+      } else if (lvl < 50) {
+        state.unlockedLevel = Math.max(state.unlockedLevel, lvl + 1);
+        state.unlockedGroupByLevel[lvl + 1] = state.unlockedGroupByLevel[lvl + 1] || 1;
+      }
+    }
+
+    function nextGroup() {
+      if (state.currentGroup < 12) {
+        startGroup(state.currentLevel, state.currentGroup + 1);
+      } else {
+        document.getElementById("completeText").textContent =
+          `Level ${state.currentLevel} completed!`;
+        go(4);
+      }
+    }
+
+    renderLevels();
+  </script>
+</body>
+</html>
